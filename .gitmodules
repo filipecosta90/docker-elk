@@ -1,0 +1,3 @@
+[submodule "docker-kafka"]
+	path = docker-kafka
+	url = https://github.com/filipecosta90/docker-kafka.git

@@ -1,21 +1,39 @@
 version: '2'
 
 services:
-
+  performance_kafka:
+    container_name: kafka
+    build:
+      context: docker-kafka/
+    ports: ['127.0.0.1:2181:2181','127.0.0.1:9092:9092']
+    environment:
+        ADVERTISED_HOST: localhost
+        ADVERTISED_PORT: 9092
+    networks:
+      - elk
+    volumes:
+      - ./docker-kafka/config/metricbeat.yml:/etc/metricbeat/metricbeat.yml:ro
+      - ./docker-kafka/config/metricbeat_kafka.yml:/etc/metricbeat/modules.d/kafka.yml:ro
+    depends_on: 
+     - elasticsearch
+        
   elasticsearch:
+    container_name: elasticsearch
+    environment: ['http.host=0.0.0.0', 'transport.host=127.0.0.1']
     build:
       context: elasticsearch/
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-    ports:
-      - "9200:9200"
-      - "9300:9300"
+      - .\elasticsearch\config\elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      #- C:\Users\filipe.oliveira\Documents\docker\docker-elk-persist-data:/usr/share/elasticsearch/data
+
+    ports: ['127.0.0.1:9200:9200','127.0.0.1:9300:9300']
     environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
     networks:
       - elk
 
   logstash:
+    container_name: logstash
     build:
       context: logstash/
     volumes:
@@ -31,18 +49,19 @@ services:
       - elasticsearch
 
   kibana:
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
     build:
       context: kibana/
     volumes:
       - ./kibana/config/:/usr/share/kibana/config:ro
-    ports:
-      - "5601:5601"
+    ports: ['127.0.0.1:5601:5601']
     networks:
       - elk
     depends_on:
       - elasticsearch
+      
 
-networks:
-
-  elk:
-    driver: bridge
+networks:  {elk: {}}
